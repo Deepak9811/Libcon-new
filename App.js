@@ -28,6 +28,7 @@ import OpacNext from './components/opac/OpacNext';
 import States from './components/States';
 
 import AboutNext from './components/aboutNext/About'
+import EventDetails from './components/EventDetails';
 
 console.disableYellowBox = true;
 
@@ -62,6 +63,7 @@ export default class App extends Component {
             <Stack.Screen name="LogInNew" component={LogInNew} />
             {/* <Stack.Screen name="Login" component={Login} /> */}
             <Stack.Screen name="Home" component={Home} />
+            <Stack.Screen name="EventDetails" component={EventDetails} />
             <Stack.Screen name="Eresource" component={Eresource} />
             <Stack.Screen name="PublicerDetails" component={PublicerDetails} />
             <Stack.Screen name="OpenBook" component={OpenBook} />

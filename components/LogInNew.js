@@ -139,7 +139,8 @@ export default class LogInNew extends Component {
           })
 
           // console.log("this.state.homeSetting :- ",this.state.homeSetting)
-
+          await AsyncStorage.setItem("homeSettings", JSON.stringify(this.state.homeSetting))
+          await AsyncStorage.setItem("welcomemsg", JSON.stringify(this.state.libraryDetails.wmsg))
           await AsyncStorage.setItem("libraryToken", JSON.stringify(resp.data.token))
 
           // console.log("libraryLogo ", this.state.libraryLogo)

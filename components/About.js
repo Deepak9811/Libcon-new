@@ -3,7 +3,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   View,
-  ActivityIndicator, ToastAndroid, Text
+  ActivityIndicator, ToastAndroid, Text, ScrollView
 } from 'react-native';
 
 import { WebView } from 'react-native-webview';
@@ -85,7 +85,7 @@ export default class About extends Component {
   }
 
   async getDetailsAbout(item) {
-    // console.log(item.id, item.heading, item.imageUrl)
+    console.log(item.id, item.heading, item.imageUrl)
     try {
       await AsyncStorage.setItem("headingAbout", JSON.stringify(item.heading))
       await AsyncStorage.setItem("imageUrlAbout", JSON.stringify(item.imageUrl))
@@ -117,42 +117,46 @@ export default class About extends Component {
           <Appbar.Content title="More About The Library" />
         </Appbar.Header>
 
-        <View style={{ justifyContent: "center", alignItems: "center", marginTop: "10%" }}>
-          {this.state.dataAbout.map((item, i) => {
-            return (
-              <React.Fragment key={i}>
-                {/* <Text>{item.heading}</Text> */}
+        <ScrollView showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}>
+
+          <View style={{ justifyContent: "center", alignItems: "center", marginTop: "5%",marginBottom:"12%" }}>
+            {this.state.dataAbout.map((item, i) => {
+              return (
+                <React.Fragment key={i}>
+                  {/* <Text>{item.heading}</Text> */}
 
 
-                <TouchableOpacity style={styles.button} onPress={() => this.getDetailsAbout(item)}>
-                  <LinearGradient
-                    colors={['#fff', '#fff']}
-                    style={styles.commonGradient}>
-                    <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
+                  <TouchableOpacity style={styles.button} onPress={() => this.getDetailsAbout(item)}>
+                    <LinearGradient
+                      colors={['#fff', '#fff']}
+                      style={styles.commonGradient}>
+                      <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
 
-                      <View >
-                        <Text style={[styles.textCommon, { color: '#e1495e' }]}>
-                          {item.heading}
-                        </Text>
+                        <View >
+                          <Text style={[styles.textCommon, { color: '#e1495e' }]}>
+                            {item.heading}
+                          </Text>
+                        </View>
+
+                        <View style={styles.rightIcon}>
+                          <Feather
+                            name="chevron-right"
+                            color="#e1495e"
+                            size={20}
+                            style={styles.rightM}
+                          />
+                        </View>
                       </View>
-
-                      <View style={styles.rightIcon}>
-                        <Feather
-                          name="chevron-right"
-                          color="#e1495e"
-                          size={20}
-                          style={styles.rightM}
-                        />
-                      </View>
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
+                    </LinearGradient>
+                  </TouchableOpacity>
 
 
-              </React.Fragment>
-            )
-          })}
-        </View>
+                </React.Fragment>
+              )
+            })}
+          </View>
+        </ScrollView>
+
 
         {this.state.loader && (
           <View style={styles.activityIndicatorStyle}>
