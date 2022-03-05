@@ -15,18 +15,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 
-import {
-  GoogleSignin,
-  GoogleSigninButton,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
-
-GoogleSignin.configure({
-  ClientId:
-    '48774575517-o9j0crni6shsal3jnoerm1o19pdqkg05.apps.googleusercontent.com',
-  // offlineAccess: true,
-  forceCodeForRefreshToken: true,
-});
 
 export default class PageFirst extends Component {
   constructor(props) {

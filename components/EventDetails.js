@@ -35,7 +35,7 @@ export default class EventDetails extends Component {
         // }
 
 
-        console.log("events details :- ", this.state.eventDeail)
+        console.log("events details :- ", eventDeails)
     }
 
 
@@ -65,7 +65,7 @@ export default class EventDetails extends Component {
                                 <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
                                     <Text style={styles.txt}>{this.props.route.params.eventDetails.validFrom.replace("T", " ")}</Text>
                                     <Text>To</Text>
-                                    <Text style={styles.txt}>{this.props.route.params.eventDetails.validFrom.replace("T", " ")}</Text>
+                                    <Text style={styles.txt}>{this.props.route.params.eventDetails.validUpto.replace("T", " ")}</Text>
 
                                 </View>
 

@@ -1,341 +1,113 @@
-import React, {Component} from 'react';
-import {
-  TouchableOpacity,
-  StyleSheet,
-  View,
-  ActivityIndicator,
-  StatusBar,
-  ScrollView,
-  Text,
-  Image,
-  BackHandler,
-} from 'react-native';
-
-import {WebView} from 'react-native-webview';
-
-import {Appbar, Button} from 'react-native-paper';
-import Feather from 'react-native-vector-icons/Feather';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import LinearGradient from 'react-native-linear-gradient';
-
+import React, { useState, useEffect } from "react";
+import { ScrollView, StyleSheet, Alert, View } from 'react-native';
 import RNFetchBlob from 'rn-fetch-blob';
+
+import Posts from "../pagination/Post";
+import Pagination from "../pagination/Pagination";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default class PublicerDetails extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      loader: false,
-      convert: 'hello',
-      searchQuer: '',
-      searchFiel: '',
-      startPag: '',
-      email: 'mtesting405@gmail.com',
-      showData: false,
-      booksDetails: [],
-      loader: true,
-      popShow: true,
-    };
-  }
+export default function Publiser({navigation}) {
+  const [posts, setPosts] = useState([]);
+  const [getDetails, setgetDetails] = useState([]);
+  const [loader, setLoading] = useState(false);
+  const [showData, setshowData] = useState(true);
+  const [showText, setshowText] = useState(true);
+  const [showpage, setshowpage] = useState(false);
+  const [showPagiantion, setshowPagiantion] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postsPerPage,setPostsPerPage] = useState(20);
 
-  async componentDidMount() {
-    const searchqueryLocal = JSON.parse(
-      await AsyncStorage.getItem('searchquery'),
-    );
-    const labelLocal = JSON.parse(await AsyncStorage.getItem('labelLocal'));
+  useEffect(() => {
 
-    this.setState({
-      searchQuer: searchqueryLocal,
-      searchFiel: labelLocal,
-    });
+    const fetchPosts = async () => {
+      setLoading(true);
+      const searchqueryLocal = JSON.parse(await AsyncStorage.getItem('searchquery'));
+      const email = JSON.parse(await AsyncStorage.getItem('email'));
+      const labelLocal = JSON.parse(await AsyncStorage.getItem('labelLocal'));
+      const documentList = JSON.parse(await AsyncStorage.getItem('documentList'));
 
-    console.log(
-      'searchquery local : ',
-      this.state.searchQuer,
-      this.state.searchFiel,
-    );
-
-    const headers = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    };
-    const body = JSON.stringify({
-        searchQuery: this.state.searchQuer,
-        searchField: this.state.searchFiel,
-        startPage: this.state.startPag,
-        userEmail: 'mtesting405@gmail.com',
+      const headers = {
+        Accept: '*/*',
+        'Content-Type': 'application/json',
+      };
+      const body = JSON.stringify({
+        searchQuery: searchqueryLocal,
+        searchField: labelLocal,
+        startPage: 0,
+        userEmail: email,
       }),
-      path = 'https://bitsomt.refread.com/webservice/pub/documents';
+        path = documentList;
 
-    RNFetchBlob.config({
-      trusty: true,
-    })
-      .fetch('POST', path, headers, body)
-      .then(resp => {
-        // console.log('resp : ', resp.data);
-        const detail = resp.data;
-        const prs = JSON.parse(detail);
-        console.log(prs.refreadDocumentList);
-        this.setState({
-          showData: true,
-          booksDetails: prs.refreadDocumentList,
-          loader: false,
-        });
+      RNFetchBlob.config({
+        trusty: true,
       })
-      .catch((error, statusCode) => {
-        console.log('statusCode :', statusCode);
-        console.log(
-          'There has been a problem with your fetch operation: ' +
-            error.message,
-        );
-      });
-  }
+        .fetch('POST', path, headers, body)
+        .then(resp => {
+          const detail = resp.data;
+          const prs = JSON.parse(detail);
 
-  async getDetails(item) {
-    console.log('label : ', item.title);
+          setPosts(prs.refreadDocumentList);
+          setLoading(false);
 
-    await AsyncStorage.setItem('Booktitle', JSON.stringify(item.title));
-    await AsyncStorage.setItem('fulltexturl', JSON.stringify(item.fulltexturl));
+          if (!prs.refreadDocumentList.length > 0) {
+            console.log("helo")
+            setshowText(false)
+          }else{
+            setshowpage(true)
+          }
+          
+          if(prs.refreadDocumentList.length <= 20 || prs.refreadDocumentList.length ===0){
+            setshowPagiantion(false)
+            console.log("check :- ", prs.refreadDocumentList);
+          }
 
-    const Booktitle = JSON.parse(await AsyncStorage.getItem('Booktitle'));
-    const fullurl = JSON.parse(await AsyncStorage.getItem('fulltexturl'));
+        })
+        .catch((error, statusCode) => {
+          // console.log('statusCode :', statusCode);
+          Alert.alert('Error', "There has been a problem with your fetch operation. Please try again.", [{ text: 'Okay' }], { cancelable: true });
+          navigation.goBack()
+          setLoading(false)
 
-    // (this.state.searchquery = item.searchQuery),
-    //   (this.state.label = item.label),
-    //   console.log('state : ', this.state.searchquery);
+          console.log(
+            'There has been a problem with your fetch operation: ' + error.message);
+        });
+    };
 
-    if (Booktitle !== '' && fullurl !== '') {
-      // this.setState({
-      //   popShow: false,
-      // });
+    fetchPosts();
+  }, []);
 
-      this.props.navigation.navigate('OpenBook');
-    } else {
-      console.log('Something wents wrong.');
-    }
-  }
+  // GET CURRENT POSTS
 
-  backButton() {
-    BackHandler.removeEventListener(
-      'hardwareBackPress',
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts = posts.slice(indexOfFirstPost, indexOfLastPost);
 
-      this.hidePop(),
-    );
-  }
 
-  hidePop() {
-    this.setState({
-      popShow: true,
-    });
-    console.log('hleoo : ', this.state.popShow);
-    return true;
-  }
+  //CHANGE PAGE
 
-  render() {
-    return (
-      <View style={styles.container}>
-        {this.state.popShow ? (
-          <>
-            <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
-            <Appbar.Header style={styles.ttl}>
-              <TouchableOpacity
-                style={{paddingLeft: '2%'}}
-                // onPress={() => this.props.navigation.goBack()}
-              >
-                <AntDesign name="arrowleft" color="#05375a" size={25} />
-              </TouchableOpacity>
+  const paginate = (pageNumber) => setCurrentPage(pageNumber)
 
-              <Appbar.Content title="Books" />
-            </Appbar.Header>
+  const postsPerPages = (pageSize) => setPostsPerPage(pageSize)
 
-            {this.state.loader ? (
-              <>
-                <View
-                  style={{
-                    height: '100%',
-                    width: '100%',
-                    position: 'absolute',
-                    elevation: 3,
-                    // backgroundColor: 'rgba(0,0,0,0.2)',
-                  }}></View>
-                <View
-                  style={{
-                    flex: 1,
-                    width: '100%',
-                    position: 'absolute',
-                    elevation: 3,
-                    top: '50%',
-                    justifyContent: 'center',
-                  }}>
-                  <ActivityIndicator size="large" color="#0d6efd" />
-                </View>
-              </>
-            ) : null}
+  console.log("currentPage :- ",postsPerPage)
 
-            <View style={styles.container}>
-              <>
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {this.state.showData ? (
-                    <View
-                      style={{
-                        marginLeft: '5%',
-                        marginRight: '5%',
-                        marginBottom: '5%',
-                      }}>
-                      <View style={styles.commonGradient}>
-                        {/* <LinearGradient
-                    colors={['#b72f26', '#f68823']}
-                    style={styles.commonGradient}> */}
-                        <Text
-                          style={{
-                            color: '#6f6f6f',
-                            fontSize: 18,
-                            fontWeight: '700',
-                            marginTop: '5%',
-                            borderBottomColor: '#f68823',
-                            borderBottomWidth: 1,
-                            paddingBottom: 10,
-                          }}>
-                          Publisher : {this.state.searchFiel}
-                        </Text>
-                        {/* </LinearGradient> */}
-                      </View>
 
-                      {this.state.booksDetails.map((item, i) => {
-                        {
-                          console.log('item : ', item.title);
-                        }
-                        return (
-                          <React.Fragment key={i}>
-                            <TouchableOpacity
-                              style={styles.button}
-                              onPress={() => this.getDetails(item)}>
-                              <LinearGradient
-                                colors={['#f7f6ff', '#eff3fe']}
-                                style={styles.commonGradient}>
-                                <View style={{flexDirection: 'row'}}>
-                                  {/* <View style={styles.iconC}>
-                                <Image
-                                  style={{width: 25, height: 25}}
-                                  source={{
-                                    uri: `${item.image_url}`,
-                                  }}
-                                  // source={{uri: 'https://acad.xlri.ac.in/library/images/industryoutlook-cmie.jpg'}}
-                                />
-                              </View> */}
-
-                                  <View
-                                    style={{
-                                      marginLeft: '5%',
-                                      margin: 10,
-                                      width: '80%',
-                                    }}>
-                                    <Text
-                                      style={[
-                                        styles.textCommon,
-                                        {color: '#191919', margin: '3%'},
-                                      ]}>
-                                      {item.title}
-                                    </Text>
-                                  </View>
-
-                                  <View style={styles.rightIcon}>
-                                    <Feather
-                                      name="chevron-right"
-                                      color="#5ec6e9"
-                                      size={15}
-                                      style={styles.rightM}
-                                    />
-                                  </View>
-                                </View>
-                              </LinearGradient>
-                            </TouchableOpacity>
-                          </React.Fragment>
-                        );
-                      })}
-                    </View>
-                  ) : null}
-                </ScrollView>
-              </>
-            </View>
-
-            {/* {this.state.loader && (
-          <View style={styles.activityIndicatorStyle}>
-            <ActivityIndicator color="#57A3FF" size="large" />
-          </View>
-        )} */}
-          </>
-        ) : (
-          <>
-            <View>
-              <Text>hello</Text>
-              <Button onPress={()=>this.backButton()}>back</Button>
-            </View>
-          </>
+  return (
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Posts posts={currentPosts} loading={loader} eText={showText} navigation={navigation} />
+        {showpage && (
+          <Pagination postsPerPage={postsPerPage} totalPosts={posts.length} showPages={showPagiantion} paginate={paginate} postsPerPages={postsPerPages} />
         )}
-      </View>
-    );
-  }
+      </ScrollView>
+
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  activityIndicatorStyle: {
-    flex: 1,
-    position: 'absolute',
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    marginBottom: 'auto',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    width: '100%',
-    height: '100%',
-    // elevation: 3,
-  },
-  ttl: {
-    backgroundColor: '#fff',
-  },
-  commonGradient: {
-    width: '100%',
-    // height: 50,
-    justifyContent: 'center',
-    // alignItems: 'center',
-    borderRadius: 10,
-  },
-  iconC: {
-    marginTop: 4,
-    marginRight: 10,
-    marginLeft: 20,
-  },
-  rightIcon: {
-    justifyContent: 'center',
-    marginTop: 4,
-    // textAlign:"right",
-    flex: 1,
-    // alignItems: 'flex-end',
-    // flexDirection:"row",
-    // width:"100%"
-  },
-  rightM: {
-    //   alignItems:"flex-end",
-    textAlign: 'right',
-    marginRight: 20,
-    //   width:"100%"
-  },
-  button: {
-    alignItems: 'center',
-    marginTop: 13,
-    // width: '100%',
-  },
-  textCommon: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+    backgroundColor: "#fff"
+  }
 });

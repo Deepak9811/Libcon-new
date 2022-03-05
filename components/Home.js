@@ -1,3 +1,5 @@
+
+
 import React, { Component } from 'react';
 import {
   Text,
@@ -15,7 +17,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import LinearGradient from 'react-native-linear-gradient';
-// import * as Animatable from 'react-native-animatable';
+import * as Animatable from 'react-native-animatable';
 
 import StarRating from 'react-native-star-rating';
 
@@ -24,6 +26,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Carousel from 'react-native-snap-carousel';
 const { width: viewportWidth, height: viewportHeight } = Dimensions.get('window');
+
+import RadioGroup from 'react-native-radio-buttons-group';
 
 export default class Home extends Component {
   constructor(props) {
@@ -52,7 +56,18 @@ export default class Home extends Component {
       feedData: [],
       showRate: false,
       starCount: 3,
-      selectingData: []
+      selectingData: [],
+
+      checked: 0,
+      checkImg: "https://www.pngfind.com/pngs/m/380-3802077_original-png-clip-art-file-selected-button-svg.png",
+      unCheckImg: "https://static.thenounproject.com/png/739877-200.png",
+
+
+      radioButtons: [],
+      data: [],
+      description: '',
+      showResponse: true,
+      hideFeedBack: true
     };
   }
   async componentDidMount() {
@@ -89,6 +104,7 @@ export default class Home extends Component {
         opacName: homeSetting[3].code,
         eResourceName: homeSetting[4].code,
         contactName: homeSetting[5].code,
+
       });
 
 
@@ -157,23 +173,33 @@ export default class Home extends Component {
       result.json().then(resp => {
         // console.log("resp FeedBack details :- ", resp.data)
         if (resp.status === "success") {
-
-
-
+          let FormatData = []
           const nwdatamcq = resp.data.map((item, i) => {
-            return (
+            if (item.mcq != null) {
               this.state.crmcq = item.mcq
-            )
+
+              let Temp = item.mcq
+
+              for (let i = 0; i < Temp.length; i++) {
+                FormatData.push({
+                  id: Temp[i].id,
+                  questionId: Temp[i].questionId,
+                  answer: Temp[i].answer,
+                  active: Temp[i].active,
+                  checked: false
+                })
+              }
+            }
           })
 
+
           this.setState({
+            data: FormatData,
             feedData: resp.data,
             mcqData: nwdatamcq,
             showFeedData: true,
           })
-
-          console.log("nwdatamcq :- ", this.state.mcqData)
-
+          console.log("nwdatamcq :- ", this.state.data)
         } else {
           this.setState({
             showFeedData: false,
@@ -186,12 +212,68 @@ export default class Home extends Component {
   }
 
 
+  onPressRadioButton(item, i) {
+    // console.log(item[0].questionId, i)
 
-  onStarRatingPress(rating) {
-    console.log(rating)
+    let postFeed = this.state.radioButtons
+
+    item.map((item, i) => {
+      if (item.selected === true) {
+
+        let strng = { questionId: item.questionId, user: this.state.email, answer: item.answer, show: item.active }
+
+        postFeed.push(strng)
+      }
+    })
+
+    let newData = ([...new Map(postFeed.map(item => [item.questionId, item])).values()])
+    console.log(newData)
     this.setState({
+      radioButtons: newData
+    })
+
+  }
+
+
+
+
+  onStarRatingPress(rating, item) {
+    console.log(rating, item.questionId, item)
+
+    let postFeed = this.state.radioButtons
+
+    let strng = { questionId: item.questionId, user: this.state.email, answer: rating, show: item.active }
+
+    postFeed.push(strng)
+
+    let newData = ([...new Map(postFeed.map(item => [item.questionId, item])).values()])
+    console.log(newData)
+    this.setState({
+      radioButtons: newData,
       starCount: rating
-    });
+    })
+
+    // this.setState({
+    //   starCount: rating
+    // });
+  }
+
+
+  descrip(des, item) {
+    console.log(des, item)
+
+    let postFeed = this.state.radioButtons
+
+    let strng = { questionId: item.questionId, user: this.state.email, answer: des, show: item.active }
+
+    postFeed.push(strng)
+
+    let newData = ([...new Map(postFeed.map(item => [item.questionId, item])).values()])
+    console.log(newData)
+    this.setState({
+      radioButtons: newData,
+      description: des
+    })
   }
 
 
@@ -249,8 +331,6 @@ export default class Home extends Component {
 
 
   getSliderData() {
-
-
 
     fetch(`https://api.libcon.in/api/v1/newArrivals`, {
       method: 'GET',
@@ -429,65 +509,91 @@ export default class Home extends Component {
 
 
   postFeedBack() {
-    const { selectingData } = this.state
-    fetch(`https://api.libcon.in/api/v1/feedback`, {
-      method: 'POST',
-      headers: {
-        Accepts: "application/json",
-        "content-type": "application/json",
-        "APP-TOKEN": this.state.token,
-        "LIB-CODE": this.state.libraryCode
-      },
-      body: JSON.stringify({
-        questionId: 5,
-        user: "rishab@gmail.com",
-        answer: selectingData,
-        show: true
+    const { radioButtons } = this.state
 
+    console.log(radioButtons.length)
+
+    if (radioButtons.length != 0) {
+      fetch(`https://api.libcon.in/api/v1/feedback`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          "APP-TOKEN": this.state.token,
+          "LIB-CODE": this.state.libraryCode
+        },
+        body: JSON.stringify(radioButtons)
+      }).then((result) => {
+        result.json().then(resp => {
+          console.log("Feedback Response resp  :- ", resp)
+
+          if (resp.status === "success") {
+            // this.setState({
+            //   eventData: resp.data,
+            //   showEvents: true,
+            // })
+
+            this.setState({
+              showFeedBack: false,
+              showResponse: false
+            })
+
+
+            setTimeout(() => {
+              this.setState({
+                hideFeedBack: false
+              })
+            }, 3000);
+
+
+
+          } else {
+            // this.setState({
+            //   showEvents: false,
+            // })
+          }
+        })
+      }).catch((error) => {
+        alert(error.message)
+        Alert.alert("Error!",
+          "Something went wrong. Please try again.",
+          [
+            { text: 'Okay' },
+          ],
+          { cancelable: true }
+        )
+        // this.setState({
+        //   showEvents: false,
+        // })
       })
-    }).then((result) => {
-      result.json().then(resp => {
-        console.log("Feedback Response resp  :- ", resp)
-        // if (resp.status === "success") {
-        //   this.setState({
-        //     eventData: resp.data,
-        //     showEvents: true,
-        //   })
-        // } else {
-        //   this.setState({
-        //     showEvents: false,
-        //   })
-        // }
-      })
-    }).catch((error) => {
-      console.log(error.message)
-      this.setState({
-        showEvents: false,
-      })
-    })
+    } else {
+      Alert.alert("",
+        "Please select the atlest one option...",
+        [
+          { text: 'Okay' },
+        ],
+        { cancelable: true }
+      )
+    }
+
+
+
+
   }
 
   render() {
     return (
       <SafeAreaView style={{ flex: 1 }}>
         <StatusBar backgroundColor="#895b82" barStyle="light-content" />
-        {/* <Appbar.Header style={styles.ttl}>
-          <Appbar.Content title="Home" />
-        </Appbar.Header> */}
-
         <ImageBackground source={require('./image/bc1.png')} resizeMode="cover" style={{
           flex: 1,
           justifyContent: "center"
         }}>
 
-
-
           <View style={styles.container}>
-
 
             <>
               <ScrollView showsVerticalScrollIndicator={false}>
-
 
                 <View style={styles.uDetail}>
 
@@ -524,7 +630,6 @@ export default class Home extends Component {
                   <Text style={{ marginTop: "5%", color: '#fff' }}>
                     {this.state.welecomeMsg}
                   </Text>
-
 
                 </View>
 
@@ -767,8 +872,7 @@ export default class Home extends Component {
 
 
                   <View style={{ marginBottom: "5%", marginTop: "8%" }}>
-                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#fff', marginBottom: "6%" }}>
-                    </View>
+                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#fff', marginBottom: "6%" }}></View>
 
                     <View>
                       <Text >
@@ -850,204 +954,269 @@ export default class Home extends Component {
 
                     {/* --------------------FeedBack------------------------------- */}
                     {/* {this.state.showEvents && ( */}
+                    {this.state.hideFeedBack ? (
+                      <View style={{ marginBottom: "10%" }}>
+                        <View style={{ borderBottomWidth: 1, borderBottomColor: '#fff', }}></View>
 
-                    <View style={{ marginBottom: "10%" }}>
-                      <View style={{ borderBottomWidth: 1, borderBottomColor: '#fff', }}></View>
+
+                        <View style={{ marginBottom: "5%", marginTop: "10%" }}>
+                          <Text >
+                            Feedback.
+                          </Text>
+                        </View>
+
+                        <View style={styles.secondContainer}>
 
 
-                      <View style={{ marginBottom: "5%", marginTop: "10%" }}>
-                        <Text >
-                          Feedback.
-                        </Text>
-                      </View>
+                          <>
+                            {this.state.showResponse ? (
+                              <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
 
-                      <View style={styles.secondContainer}>
+                                <View style={{ justifyContent: "center" }}>
+                                  <Text style={[{ marginLeft: 10, alignItems: "center", fontSize: 18 }]}>
+                                    Feedback
+                                  </Text>
+                                </View>
 
-                        <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
+                                {this.state.showFeedBack ? (
+                                  <TouchableOpacity
+                                    style={styles.rightIcon}
+                                    onPress={() => this.HideFeed()}>
+                                    <Feather
+                                      name="chevron-up"
+                                      color="#5ec6e9"
+                                      size={25}
+                                      style={[styles.rightM]}
+                                    />
+                                  </TouchableOpacity>
+                                ) : (
+                                  <TouchableOpacity
+                                    style={styles.rightIcon}
+                                    onPress={() => this.showFeed()}>
+                                    <Feather
+                                      name="chevron-down"
+                                      color="#3860cc"
+                                      size={25}
+                                      style={[styles.rightM]}
+                                    />
+                                  </TouchableOpacity>
+                                )}
 
-                          <View style={{ justifyContent: "center" }}>
-                            <Text style={[{ marginLeft: 10, alignItems: "center", fontSize: 18 }]}>
-                              Feedback
-                            </Text>
-                          </View>
+                              </View>
+                            ) : (
+                              <View style={{ flexDirection: "row", padding: "5%" }}>
+                                <Animatable.Text animation={'rubberBand'} style={{ fontWeight: "bold", marginRight: "4%", justifyContent: "center", alignContent: "center", alignItems: "center", marginTop: "1%", fontSize: 16 }}>Thank Your For Your Feedbak.</Animatable.Text>
+                                <Animatable.View style={styles.successIcon} animation={'bounceIn'}>
+                                  <Feather name="check-circle" color="green" size={28} />
+                                </Animatable.View>
+                              </View>
+                            )}
+                          </>
+
+
+
 
                           {this.state.showFeedBack ? (
-                            <TouchableOpacity
-                              style={styles.rightIcon}
-                              onPress={() => this.HideFeed()}>
-                              <Feather
-                                name="chevron-up"
-                                color="#5ec6e9"
-                                size={25}
-                                style={[styles.rightM]}
-                              />
-                            </TouchableOpacity>
-                          ) : (
-                            <TouchableOpacity
-                              style={styles.rightIcon}
-                              onPress={() => this.showFeed()}>
-                              <Feather
-                                name="chevron-down"
-                                color="#3860cc"
-                                size={25}
-                                style={[styles.rightM]}
-                              />
-                            </TouchableOpacity>
-                          )}
+                            <View style={{ marginTop: "5%", marginBottom: "5%" }}>
+                              {this.state.feedData.map((item, i) => {
+                                { console.log("item.mcq 1 :- ", item.type) }
+                                this.state.typ = item.type
+                                this.state.showRate = true;
+
+                                if (item.type === "Rate") {
+                                  this.state.showRate = true;
+                                  this.state.showGEN = false;
+                                  console.log("Rate :- ", item.type,this.state.showRate)
+                                } else if (item.type === "GEN") {
+                                  this.state.showGEN = true;
+                                  this.state.showRate = false;
+                                  console.log("General ", item.type)
+                                } else if (item.type === "Rate") {
+                                  this.state.showRate = true;
+                                  this.state.showGEN = false;
+                                  console.log("Rate 1 :- ", item.type)
+                                } else {
+                                  this.state.showGEN = false;
+                                  this.state.showRate = false;
+                                  this.state.showOption = true
+                                  // console.log("this.state.showGEN :- ", this.state.showGEN, this.state.showRate)
+                                }
 
 
+                                if (item.mcq != null) {
+                                  if (item.mcq.length > 0) {
+
+                                    this.state.newMcqData = item.mcq;
+
+                                    this.state.showMcqAnswer = true
+
+                                    this.state.showOption = true
+                                  }
+                                } else {
+                                  this.state.newMcqData = [{ answer: "item.mcq", questionId: item.id, active: item.active }]
+
+                                }
+                                return (
+                                  <React.Fragment key={i}>
+
+                                    <View style={{ flexDirection: "row" }}>
+                                      <Text>{i + 1}. </Text>
+                                      <Text>{item.question}</Text>
+                                    </View>
+
+                                    <View style={{ flexDirection: "row" }}>
+
+                                      {this.state.showOption ? (
+                                        <View style={{ width: "10%" }}>
+                                          <RadioGroup
+                                            radioButtons={this.state.newMcqData}
+                                            onPress={(radioButtonsArray, i) => this.onPressRadioButton(radioButtonsArray, i)}
+                                          />
+                                        </View>
+                                      ) : null}
+
+                                      {this.state.showMcqAnswer && (
+
+                                        <View style={{ marginTop: "2%" }}>
+                                          {this.state.newMcqData.map((item, key) => {
+                                            // { console.log("item.answer 3 :- ", item) }
+                                            this.state.showOption = true
+                                            {
+                                              if (item.answer === "item.mcq") {
+                                                // if (this.state.typ === "Rate") {
+                                                //   this.state.showRate = true;
+                                                //   this.state.showGEN = false;
+                                                //   console.log("Rate :- ", this.state.typ)
+                                                // } else if (this.state.typ === "GEN") {
+                                                //   this.state.showGEN = true;
+                                                //   this.state.showRate = false;
+                                                //   console.log("General ", this.state.typ)
+                                                // }  else if (this.state.typ === "Rate") {
+                                                //   this.state.showRate = true;
+                                                //   this.state.showGEN = false;
+                                                //   console.log("Rate :- ", this.state.typ)
+                                                // }else {
+                                                //   this.state.showGEN = false;
+                                                //   this.state.showRate = false;
+                                                //   this.state.showOption = true
+                                                //   // console.log("this.state.showGEN :- ", this.state.showGEN, this.state.showRate)
+                                                // }
+                                                this.state.showOption = true
+                                              } else {
+                                                // console.log(this.state.typ)
+                                                this.state.showOption = false;
+                                              }
+                                            }
+                                            return (
+                                              <React.Fragment key={key}>
+                                                <View style={{ flexDirection: 'row' }}>
+
+                                                  {!this.state.showOption ? (
+                                                    <>
+                                                      <View style={{ marginRight: '2%', marginLeft: "2%", marginBottom: "20%" }}>
+                                                        <Text style={[styles.title,]}> {item.answer}</Text>
+                                                      </View>
+
+                                                    </>
+                                                  ) : (
+                                                    <>
+
+                                                      
+
+
+                                                      <>
+                                                        {this.state.showGEN && (
+
+                                                          <View style={[styles.textAreaContainer, { height: 150 }]} >
+                                                            <TextInput
+                                                              style={styles.textArea}
+                                                              underlineColorAndroid="transparent"
+                                                              placeholder="Description..."
+                                                              placeholderTextColor="grey"
+                                                              // numberOfLines={10}
+                                                              multiline={true}
+                                                              value={this.state.description}
+                                                              onChangeText={des => this.descrip(des, item)}
+                                                            />
+                                                          </View>
+                                                        )}
+                                                      </>
+
+
+
+                                                      <>
+
+                                                        {this.state.showRate ? (
+                                                          <View style={[styles.textAreaContainer, { borderWidth: 0 }]} >
+                                                          <StarRating
+                                                            disabled={false}
+                                                            maxStars={5}
+                                                            rating={this.state.starCount}
+                                                            selectedStar={(rating) => this.onStarRatingPress(rating, item)}
+                                                            fullStarColor={'#FFC300'}
+                                                          />
+                                                        </View>
+                                                        ):null}
+                                                      </>
+
+
+                                                    </>
+                                                  )}
+
+                                                </View>
+                                              </React.Fragment>
+                                            )
+                                          })}
+
+                                        </View>
+                                      )}
+                                    </View>
+
+
+
+
+
+                                  </React.Fragment>
+                                )
+                              })}
+
+                              <TouchableOpacity
+                                style={styles.button}
+                                onPress={() => this.postFeedBack()}>
+                                <LinearGradient
+                                  colors={['#f68823', '#b03024']}
+                                  style={styles.signIn}>
+                                  <Text
+                                    style={[
+                                      styles.textSign,
+                                      {
+                                        color: '#fff',
+                                      },
+                                    ]}>
+                                    Submit
+                                  </Text>
+                                </LinearGradient>
+                              </TouchableOpacity>
+
+
+                            </View>
+                          ) : null}
 
                         </View>
-                        {this.state.showFeedBack ? (
-                          <View style={{ marginTop: "5%", marginBottom: "5%" }}>
-                            {this.state.feedData.map((item, i) => {
-                              // { console.log("item.mcq 1 :- ", item) }
-                              this.state.typ = item.type
-                              if (item.mcq != null) {
-                                if (item.mcq.length > 0) {
-                                  // console.log("item.mcq.length 2 :- ", item.mcq.length)
-                                  this.state.newMcqData = item.mcq,
-                                    // 
-                                    this.state.showMcqAnswer = true
-                                }
-                              } else {
-                                this.state.newMcqData = [{ answer: "item.mcq" }]
-                              }
-                              return (
-                                <React.Fragment key={i}>
-
-                                  <View style={{ flexDirection: "row" }}>
-                                    <Text>{i + 1}. </Text>
-                                    <Text>{item.question}</Text>
-                                  </View>
-
-                                  {this.state.showMcqAnswer && (
-
-                                    <View style={{ marginTop: "2%" }}>
-                                      {this.state.newMcqData.map((item, i) => {
-                                        // { console.log("item.answer 3 :- ", this.state.newMcqData) }
-                                        {
-                                          if (item.answer === "item.mcq") {
-                                            if (this.state.typ === "RATE") {
-                                              this.state.showRate = true;
-                                              this.state.showGEN = false;
-                                              // console.log("Rate :- ", this.state.showRate)
-                                            } else if (this.state.typ === "GEN") {
-                                              this.state.showGEN = true;
-                                              this.state.showRate = false;
-                                              // console.log("General ", this.state.showGEN)
-                                            } else {
-                                              this.state.showGEN = false;
-                                              this.state.showRate = false;
-                                              // console.log("this.state.showGEN :- ", this.state.showGEN, this.state.showRate)
-                                            }
-
-                                            this.state.showOption = true
-
-                                          } else {
-                                            // console.log(this.state.typ)
-                                            this.state.showOption = false;
-                                          }
-                                        }
-                                        return (
-                                          <React.Fragment key={i}>
-                                            <View style={{ flexDirection: 'row' }}>
-
-                                              {!this.state.showOption ? (
-                                                <>
-                                                  <View style={{ marginRight: '2%', marginLeft: "2%", }}>
-                                                    <RadioButton
-                                                      status={this.state.selectingData.includes(item.answer) ? 'checked' : 'unchecked'}
-                                                      onPress={() => this.selectAnItem(item, i)}
-                                                    />
-                                                  </View>
-
-                                                  <View style={{ marginTop: "2%" }}>
-                                                    <TouchableOpacity onPress={() => this.selectAnItem(item, i)}>
-                                                      <Text style={[styles.title,]} >
-                                                        {item.answer}
-                                                      </Text>
-                                                    </TouchableOpacity>
-
-                                                  </View>
-                                                </>
-                                              ) : (
-                                                <>
-
-                                                  {this.state.showRate && (
-
-                                                    <View style={[styles.textAreaContainer, { borderWidth: 0 }]} >
-                                                      <StarRating
-                                                        disabled={false}
-                                                        maxStars={5}
-                                                        rating={this.state.starCount}
-                                                        selectedStar={(rating) => this.onStarRatingPress(rating)}
-                                                        fullStarColor={'#FFC300'}
-                                                      />
-                                                    </View>
-                                                  )}
-
-                                                  {this.state.showGEN && (
-                                                    <View style={styles.textAreaContainer} >
-                                                      <TextInput
-                                                        style={styles.textArea}
-                                                        underlineColorAndroid="transparent"
-                                                        placeholder="Description..."
-                                                        placeholderTextColor="grey"
-                                                        numberOfLines={10}
-                                                        multiline={true}
-                                                      />
-                                                    </View>
-                                                  )}
-
-
-                                                </>
-                                              )}
-
-                                            </View>
-                                          </React.Fragment>
-                                        )
-                                      })}
-
-                                    </View>
-                                  )}
-
-
-
-
-
-                                </React.Fragment>
-                              )
-                            })}
-
-
-                            <TouchableOpacity
-                              style={styles.button}
-                              onPress={() => this.postFeedBack()}>
-                              <LinearGradient
-                                colors={['#f68823', '#b03024']}
-                                style={styles.signIn}>
-                                <Text
-                                  style={[
-                                    styles.textSign,
-                                    {
-                                      color: '#fff',
-                                    },
-                                  ]}>
-                                  Send
-                                </Text>
-                              </LinearGradient>
-                            </TouchableOpacity>
-
-
-
-
-                          </View>
-                        ) : null}
-
                       </View>
-                    </View>
+
+
+                    ) : null}
                     {/* )} */}
+
+
+
+
+
+
+
+
+
 
 
                     {/* ------------------Quote----------------------------- */}
@@ -1163,7 +1332,8 @@ const styles = StyleSheet.create({
     marginBottom: "5%"
   },
   textArea: {
-    height: 150,
+    // height: 150,
+    paddingBottom: "10%",
     justifyContent: "flex-start"
   },
 

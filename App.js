@@ -10,7 +10,6 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import OnBoardScreen from './components/OnBoardScreen'
 import Library from './components/Library'
-import Login from './components/Login';
 import PageFirst from './components/PageFirst';
 import VerifyNum from './components/VerifyNum';
 import Home from './components/Home';
@@ -51,7 +50,6 @@ export default class App extends Component {
             screenOptions={{
               headerShown: false,
             }}>
-
             <Stack.Screen name="PageFirst" component={PageFirst} />
             <Stack.Screen name="OnBoard" component={OnBoardScreen} />
             <Stack.Screen name="State" component={States} />
@@ -61,7 +59,6 @@ export default class App extends Component {
 
             {/* <Stack.Screen name="test" component={Tesst} /> */}
             <Stack.Screen name="LogInNew" component={LogInNew} />
-            {/* <Stack.Screen name="Login" component={Login} /> */}
             <Stack.Screen name="Home" component={Home} />
             <Stack.Screen name="EventDetails" component={EventDetails} />
             <Stack.Screen name="Eresource" component={Eresource} />

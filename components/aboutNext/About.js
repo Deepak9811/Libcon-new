@@ -14,7 +14,7 @@ const source = {
   </p>`
 };
 
-export default class about extends Component {
+export default class About extends Component {
     constructor(props) {
         super(props)
 
